@@ -60,7 +60,6 @@ export class DarknetBase {
         if (!config.names && config.namefile) config.names = readFileSync(config.namefile, 'utf8').split('\n');
         if (!config.names) throw new Error("No names detected.");
         if (!config.config) throw new Error("Config must include location to yolo config file");
-        if (!config.weights) throw new Error("config must include the path to trained weights");
 
         this.configFile = config.config;
         this.names = config.names.filter(a => a.split("").length > 0);
@@ -83,8 +82,9 @@ export class DarknetBase {
             'train_detector_with_callback': ['void', ['string',  'string', 'string', int_pointer, 'int', 'int', 'int', 'int', 'int', 'int', 'pointer']],
         });
 
-        this.net = this.darknet.load_network(config.config, config.weights, 0);
-
+        if (config.weights) {
+            this.net = this.darknet.load_network(config.config, config.weights, 0);
+        }
     }
 
     private getArrayFromBuffer(buffer: Buffer, length: number, type: ref.Type): number[] {
