@@ -46,8 +46,10 @@ export class DarknetBase {
     meta: any;
     net: any;
     configFile: string;
+    weightFile: string;
 
     names: string[];
+    isTrainMode: boolean;
 
     /**
      * A new instance of pjreddie's darknet. Create an instance as soon as possible in your app, because it takes a while to init.
@@ -56,17 +58,21 @@ export class DarknetBase {
     constructor(config: IDarknetConfig) {
 
         if (!config) throw new Error("A config file is required");
-        if (!config.names && !config.namefile) throw new Error("Config must include detection class names");
-        if (!config.names && config.namefile) config.names = readFileSync(config.namefile, 'utf8').split('\n');
-        if (!config.names) throw new Error("No names detected.");
-        if (!config.config) throw new Error("Config must include location to yolo config file");
+        if (!config.train) {
+            if (!config.names && !config.namefile) throw new Error("Config must include detection class names");
+            if (!config.names && config.namefile) config.names = readFileSync(config.namefile, 'utf8').split('\n');
+            if (!config.names) throw new Error("No names detected.");
+            if (!config.config) throw new Error("Config must include location to yolo config file");
+            
+            this.names = config.names.filter(a => a.split("").length > 0);
+            this.meta = new METADATA;
+            this.meta.classes = this.names.length;
+            this.meta.names = this.names.join('\n');
+        } else {
+            this.isTrainMode = true;
+        }
 
         this.configFile = config.config;
-        this.names = config.names.filter(a => a.split("").length > 0);
-
-        this.meta = new METADATA;
-        this.meta.classes = this.names.length;
-        this.meta.names = this.names.join('\n');
 
         this.darknet = ffi.Library(library, {
             'float_to_image': [ IMAGE, [ 'int', 'int', 'int', float_pointer ]],
@@ -78,11 +84,10 @@ export class DarknetBase {
             'free_detections': [ 'void', [ detection_pointer, 'int' ]],
             'load_network': [ 'pointer', [ 'string', 'string', 'int' ]],
             'get_metadata': [ METADATA, [ 'string' ]],
-            'train_detector': ['void', ['string',  'string', 'string', int_pointer, 'int', 'int', 'int', 'int', 'int', 'int']],
             'train_detector_with_callback': ['void', ['string',  'string', 'string', int_pointer, 'int', 'int', 'int', 'int', 'int', 'int', 'pointer']],
         });
 
-        if (config.weights) {
+        if (!config.train) {
             this.net = this.darknet.load_network(config.config, config.weights, 0);
         }
     }
@@ -175,6 +180,7 @@ export class DarknetBase {
      * @param config optional configuration (threshold, etc.)
      */
     detect(image: string | IBufferImage, config?: IConfig) {
+        if (this.isTrainMode) throw new Error('I cannot detect anything in training mode.')
         if (!config) config = {};
 
         const darkNetLoadedImage = typeof image === 'string';
@@ -194,7 +200,7 @@ export class DarknetBase {
         return detection;
     }
 
-    train(dataFile: string, weightsFile: string, cb: Function) {
+    train(dataFile: string, weightsFile: string, cb: ITrainCallback) {
         let cfgFile = this.configFile;
         let callback = ffi.Callback('void', ['int', 'float', 'float', 'float', 'double', 'int'],
             function(batch, loss, avg_loss, curr_rate, spend_time, imgs) {
@@ -388,6 +394,7 @@ export interface IDarknetConfig {
     config: string;
     names?: string[];
     namefile?: string;
+    train?: boolean;
 }
 
 export interface Detection {
@@ -399,6 +406,19 @@ export interface Detection {
         w: number;
         h: number;
     };
+}
+
+export interface ITrainCallbackReturs {
+    batch: number;
+    loss: number;
+    avg_loss: number;
+    curr_rate: number;
+    spend_time: number;
+    imgs: number;
+}
+
+export interface ITrainCallback {
+    (error: Error, result?: ITrainCallbackReturs): void;
 }
 
 export { Darknet } from './detector';

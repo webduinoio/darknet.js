@@ -76,19 +76,24 @@ var DarknetBase = /** @class */ (function () {
     function DarknetBase(config) {
         if (!config)
             throw new Error("A config file is required");
-        if (!config.names && !config.namefile)
-            throw new Error("Config must include detection class names");
-        if (!config.names && config.namefile)
-            config.names = fs_1.readFileSync(config.namefile, 'utf8').split('\n');
-        if (!config.names)
-            throw new Error("No names detected.");
-        if (!config.config)
-            throw new Error("Config must include location to yolo config file");
+        if (!config.train) {
+            if (!config.names && !config.namefile)
+                throw new Error("Config must include detection class names");
+            if (!config.names && config.namefile)
+                config.names = fs_1.readFileSync(config.namefile, 'utf8').split('\n');
+            if (!config.names)
+                throw new Error("No names detected.");
+            if (!config.config)
+                throw new Error("Config must include location to yolo config file");
+            this.names = config.names.filter(function (a) { return a.split("").length > 0; });
+            this.meta = new METADATA;
+            this.meta.classes = this.names.length;
+            this.meta.names = this.names.join('\n');
+        }
+        else {
+            this.isTrainMode = true;
+        }
         this.configFile = config.config;
-        this.names = config.names.filter(function (a) { return a.split("").length > 0; });
-        this.meta = new METADATA;
-        this.meta.classes = this.names.length;
-        this.meta.names = this.names.join('\n');
         this.darknet = ffi.Library(library, {
             'float_to_image': [IMAGE, ['int', 'int', 'int', float_pointer]],
             'load_image_color': [IMAGE, ['string', 'int', 'int']],
@@ -99,10 +104,9 @@ var DarknetBase = /** @class */ (function () {
             'free_detections': ['void', [detection_pointer, 'int']],
             'load_network': ['pointer', ['string', 'string', 'int']],
             'get_metadata': [METADATA, ['string']],
-            'train_detector': ['void', ['string', 'string', 'string', int_pointer, 'int', 'int', 'int', 'int', 'int', 'int']],
             'train_detector_with_callback': ['void', ['string', 'string', 'string', int_pointer, 'int', 'int', 'int', 'int', 'int', 'int', 'pointer']],
         });
-        if (config.weights) {
+        if (!config.train) {
             this.net = this.darknet.load_network(config.config, config.weights, 0);
         }
     }
@@ -188,6 +192,8 @@ var DarknetBase = /** @class */ (function () {
      * @param config optional configuration (threshold, etc.)
      */
     DarknetBase.prototype.detect = function (image, config) {
+        if (this.isTrainMode)
+            throw new Error('I cannot detect anything in training mode.');
         if (!config)
             config = {};
         var darkNetLoadedImage = typeof image === 'string';

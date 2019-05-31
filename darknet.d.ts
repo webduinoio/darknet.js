@@ -4,7 +4,9 @@ export declare class DarknetBase {
     meta: any;
     net: any;
     configFile: string;
+    weightFile: string;
     names: string[];
+    isTrainMode: boolean;
     /**
      * A new instance of pjreddie's darknet. Create an instance as soon as possible in your app, because it takes a while to init.
      * @param config
@@ -20,7 +22,7 @@ export declare class DarknetBase {
      * @param config optional configuration (threshold, etc.)
      */
     detect(image: string | IBufferImage, config?: IConfig): Detection[];
-    train(dataFile: string, weightsFile: string, cb: Function): void;
+    train(dataFile: string, weightsFile: string, cb: ITrainCallback): void;
     /**
      * Get a Darknet Image from path
      * @param path
@@ -83,6 +85,7 @@ export interface IDarknetConfig {
     config: string;
     names?: string[];
     namefile?: string;
+    train?: boolean;
 }
 export interface Detection {
     name: string;
@@ -93,6 +96,17 @@ export interface Detection {
         w: number;
         h: number;
     };
+}
+export interface ITrainCallbackReturs {
+    batch: number;
+    loss: number;
+    avg_loss: number;
+    curr_rate: number;
+    spend_time: number;
+    imgs: number;
+}
+export interface ITrainCallback {
+    (error: Error, result?: ITrainCallbackReturs): void;
 }
 export { Darknet } from './detector';
 export { Darknet as DarknetExperimental } from './detector';
