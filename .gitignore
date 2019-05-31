@@ -1,3 +1,4 @@
+.vscode/
 node_modules/
 libdarknet*
 darknet/
@@ -8,3 +9,10 @@ examples/giraffe.jpg
 examples/yolov3-tiny.cfg
 examples/yolov3-tiny.weights
 examples/coco.names
+
+.DS_Store
+*.lock
+*.log
+*.swo
+*.swp
+*.dylib
