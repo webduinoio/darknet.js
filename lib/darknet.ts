@@ -38,13 +38,14 @@ const METADATA = Struct({
 
 const detection_pointer = ref.refType(DETECTION);
 
-const library = __dirname + "/libdarknet";
+const library = __dirname + "/darknet/lib/libdarklib";
 
 export class DarknetBase {
 
     darknet: any;
     meta: any;
     net: any;
+    configFile: string;
 
     names: string[];
 
@@ -61,6 +62,7 @@ export class DarknetBase {
         if (!config.config) throw new Error("Config must include location to yolo config file");
         if (!config.weights) throw new Error("config must include the path to trained weights");
 
+        this.configFile = config.config;
         this.names = config.names.filter(a => a.split("").length > 0);
 
         this.meta = new METADATA;
@@ -77,6 +79,8 @@ export class DarknetBase {
             'free_detections': [ 'void', [ detection_pointer, 'int' ]],
             'load_network': [ 'pointer', [ 'string', 'string', 'int' ]],
             'get_metadata': [ METADATA, [ 'string' ]],
+            'train_detector': ['void', ['string',  'string', 'string', int_pointer, 'int', 'int', 'int', 'int', 'int', 'int']],
+            'train_detector_with_callback': ['void', ['string',  'string', 'string', int_pointer, 'int', 'int', 'int', 'int', 'int', 'int', 'pointer']],
         });
 
         this.net = this.darknet.load_network(config.config, config.weights, 0);
@@ -188,6 +192,29 @@ export class DarknetBase {
             // memory is owned by JS and will GC eventually
         }
         return detection;
+    }
+
+    train(dataFile: string, weightsFile: string, cb: Function) {
+        let cfgFile = this.configFile;
+        let callback = ffi.Callback('void', ['int', 'float', 'float', 'float', 'double', 'int'],
+            function(batch, loss, avg_loss, curr_rate, spend_time, imgs) {
+                cb(null, { batch, loss, avg_loss, curr_rate, spend_time, imgs });
+            }
+        );
+        this.darknet.train_detector_with_callback.async(
+            dataFile,
+            cfgFile,
+            weightsFile,
+            ref.alloc('int', 0),
+            1,
+            null,
+            1,
+            0,
+            -1,
+            0,
+            callback,
+            (err: any) => cb(err),
+        );
     }
 
     /**

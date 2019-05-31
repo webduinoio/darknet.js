@@ -3,6 +3,7 @@ export declare class DarknetBase {
     darknet: any;
     meta: any;
     net: any;
+    configFile: string;
     names: string[];
     /**
      * A new instance of pjreddie's darknet. Create an instance as soon as possible in your app, because it takes a while to init.
@@ -19,6 +20,7 @@ export declare class DarknetBase {
      * @param config optional configuration (threshold, etc.)
      */
     detect(image: string | IBufferImage, config?: IConfig): Detection[];
+    train(dataFile: string, weightsFile: string, cb: Function): void;
     /**
      * Get a Darknet Image from path
      * @param path

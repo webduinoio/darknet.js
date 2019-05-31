@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 if [ ! -d darknet ]; then
-		git clone https://github.com/pjreddie/darknet;
+		git clone https://github.com/single9/darknet.git;
 
 		if [ $? -ne 0 ]; then
 				echo "Could not clone darknet repo";
@@ -42,7 +42,8 @@ sed -i -e "s/CUDNN=[01]/CUDNN=${CUDNN}/g" ./Makefile
 sed -i -e "s/OPENCV=[01]/OPENCV=${OPENCV}/g" ./Makefile
 sed -i -e "s/OPENMP=[01]/OPENMP=${OPENMP}/g" ./Makefile
 
-make
+# make clean && make -j
+./build.sh
 
 if [ $? -ne 0 ]; then
 		echo "Could not compile darknet";
@@ -50,12 +51,15 @@ if [ $? -ne 0 ]; then
 fi
 
 # copy lib
-cp libdarknet* ..
+cp lib/libdark* ..
 
 # dive out
 cd ..
 
 # if macos make .dylib symlink
 if [[ "$OSTYPE" == "darwin"* ]]; then
+		if [ -e libdarknet.dylib ]; then
+			rm libdarknet.dylib
+		fi
 		ln -s libdarknet.so libdarknet.dylib
 fi

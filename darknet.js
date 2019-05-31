@@ -67,7 +67,7 @@ var METADATA = Struct({
     'names': 'string'
 });
 var detection_pointer = ref.refType(DETECTION);
-var library = __dirname + "/libdarknet";
+var library = __dirname + "/darknet/lib/libdarklib";
 var DarknetBase = /** @class */ (function () {
     /**
      * A new instance of pjreddie's darknet. Create an instance as soon as possible in your app, because it takes a while to init.
@@ -86,6 +86,7 @@ var DarknetBase = /** @class */ (function () {
             throw new Error("Config must include location to yolo config file");
         if (!config.weights)
             throw new Error("config must include the path to trained weights");
+        this.configFile = config.config;
         this.names = config.names.filter(function (a) { return a.split("").length > 0; });
         this.meta = new METADATA;
         this.meta.classes = this.names.length;
@@ -100,6 +101,8 @@ var DarknetBase = /** @class */ (function () {
             'free_detections': ['void', [detection_pointer, 'int']],
             'load_network': ['pointer', ['string', 'string', 'int']],
             'get_metadata': [METADATA, ['string']],
+            'train_detector': ['void', ['string', 'string', 'string', int_pointer, 'int', 'int', 'int', 'int', 'int', 'int']],
+            'train_detector_with_callback': ['void', ['string', 'string', 'string', int_pointer, 'int', 'int', 'int', 'int', 'int', 'int', 'pointer']],
         });
         this.net = this.darknet.load_network(config.config, config.weights, 0);
     }
@@ -200,6 +203,13 @@ var DarknetBase = /** @class */ (function () {
             // memory is owned by JS and will GC eventually
         }
         return detection;
+    };
+    DarknetBase.prototype.train = function (dataFile, weightsFile, cb) {
+        var cfgFile = this.configFile;
+        var callback = ffi.Callback('void', ['int', 'float', 'float', 'float', 'double', 'int'], function (batch, loss, avg_loss, curr_rate, spend_time, imgs) {
+            cb(null, { batch: batch, loss: loss, avg_loss: avg_loss, curr_rate: curr_rate, spend_time: spend_time, imgs: imgs });
+        });
+        this.darknet.train_detector_with_callback.async(dataFile, cfgFile, weightsFile, ref.alloc('int', 0), 1, null, 1, 0, -1, 0, callback, function (err) { return cb(err); });
     };
     /**
      * Get a Darknet Image from path
