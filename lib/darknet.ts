@@ -38,7 +38,7 @@ const METADATA = Struct({
 
 const detection_pointer = ref.refType(DETECTION);
 
-const library = __dirname + "/darknet/lib/libdarklib";
+const library = __dirname + "/libdarknet";
 
 export class DarknetBase {
 
