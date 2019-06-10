@@ -202,9 +202,9 @@ export class DarknetBase {
 
     train(dataFile: string, weightsFile: string, cb: ITrainCallback) {
         let cfgFile = this.configFile;
-        let callback = ffi.Callback('void', ['int', 'float', 'float', 'float', 'double', 'int'],
-            function(batch, loss, avg_loss, curr_rate, spend_time, imgs) {
-                cb(null, { batch, loss, avg_loss, curr_rate, spend_time, imgs });
+        let callback = ffi.Callback('void', ['string', 'int', 'float', 'float', 'float', 'double', 'int'],
+            function(error, batch, loss, avg_loss, curr_rate, spend_time, imgs) {
+                cb(error, { batch, loss, avg_loss, curr_rate, spend_time, imgs });
             }
         );
         this.darknet.train_detector_with_callback.async(

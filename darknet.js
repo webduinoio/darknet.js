@@ -212,8 +212,8 @@ var DarknetBase = /** @class */ (function () {
     };
     DarknetBase.prototype.train = function (dataFile, weightsFile, cb) {
         var cfgFile = this.configFile;
-        var callback = ffi.Callback('void', ['int', 'float', 'float', 'float', 'double', 'int'], function (batch, loss, avg_loss, curr_rate, spend_time, imgs) {
-            cb(null, { batch: batch, loss: loss, avg_loss: avg_loss, curr_rate: curr_rate, spend_time: spend_time, imgs: imgs });
+        var callback = ffi.Callback('void', ['string', 'int', 'float', 'float', 'float', 'double', 'int'], function (error, batch, loss, avg_loss, curr_rate, spend_time, imgs) {
+            cb(error, { batch: batch, loss: loss, avg_loss: avg_loss, curr_rate: curr_rate, spend_time: spend_time, imgs: imgs });
         });
         this.darknet.train_detector_with_callback.async(dataFile, cfgFile, weightsFile, ref.alloc('int', 0), 1, null, 1, 0, -1, 0, callback, function (err) { return cb(err); });
     };
