@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 if [ ! -d darknet ]; then
-		git clone https://github.com/single9/darknet.git;
+		git clone https://github.com/webduinoio/darknet.git;
 
 		if [ $? -ne 0 ]; then
 				echo "Could not clone darknet repo";
